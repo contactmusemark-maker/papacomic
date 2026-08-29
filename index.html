@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Babe & Papa — A Comic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Kalam:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+  :root{
+    --ink:#151521;
+    --midnight:#1c1c2e;
+    --midnight-deep:#121220;
+    --parchment:#f4e9d8;
+    --coral:#ff6f91;
+    --gold:#d4af37;
+    --green:#5fbf6f;
+    --red:#e5555a;
+    --paper-shadow: rgba(0,0,0,0.45);
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color: transparent; }
+  html,body{
+    height:100%;
+    background:var(--midnight-deep);
+    color:var(--parchment);
+    font-family:'Kalam', cursive;
+    overflow:hidden;
+  }
+
+  .halftone{
+    position:absolute; inset:0;
+    background-image: radial-gradient(var(--coral) 1px, transparent 1.4px);
+    background-size: 14px 14px;
+    opacity:0.08;
+    pointer-events:none;
+  }
+
+  /* ================= LOGIN ================= */
+  #loginScreen{
+    position:fixed; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background: radial-gradient(circle at 50% 40%, rgba(255,111,145,0.18), transparent 60%), var(--midnight);
+    z-index: 30;
+    text-align:center;
+    padding: 24px;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  #loginScreen.hidden{ opacity:0; transform: scale(1.03); pointer-events:none; }
+  #loginScreen .frame{
+    position:relative;
+    border:4px solid var(--gold);
+    outline:2px solid var(--ink);
+    outline-offset:6px;
+    padding:36px 30px;
+    background: rgba(18,18,32,0.6);
+    max-width: 92vw;
+    width: 340px;
+  }
+  #loginScreen h1{
+    font-family:'Bangers', cursive;
+    font-size: clamp(2rem, 9vw, 3rem);
+    letter-spacing: 2px;
+    color: var(--parchment);
+    text-shadow: 3px 3px 0 var(--coral), 5px 5px 0 var(--ink);
+  }
+  #loginScreen .sub{
+    margin-top:8px; margin-bottom: 24px;
+    font-size: 0.75rem; letter-spacing: 3px; text-transform: uppercase; color: var(--gold);
+  }
+  .login-field{ text-align:left; margin-bottom: 14px; }
+  .login-field label{ display:block; font-size:0.8rem; color: rgba(244,233,216,0.6); margin-bottom:5px; letter-spacing:1px; }
+  .login-field input{
+    width:100%; font-family:'Kalam', cursive; font-size:1rem; padding: 10px 12px;
+    border: 2px solid var(--gold); border-radius: 6px; background: rgba(244,233,216,0.08); color: var(--parchment); outline:none;
+  }
+  .login-field input::placeholder{ color: rgba(244,233,216,0.3); }
+  #loginError{ color: var(--coral); font-size:0.85rem; min-height: 1.2em; margin-bottom: 6px; }
+  #loginBtn{ width:100%; margin-top: 6px; }
+
+  /* ================= COVER / GATE ================= */
+  #cover{
+    position:fixed; inset:0;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background: radial-gradient(circle at 50% 40%, rgba(255,111,145,0.18), transparent 60%), var(--midnight);
+    z-index:20;
+    text-align:center;
+    padding:24px;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  #cover.hidden{ opacity:0; transform: scale(1.03); pointer-events:none; }
+  #cover .burst{
+    position:absolute;
+    width:min(80vw, 520px);
+    aspect-ratio:1/1;
+    background: repeating-conic-gradient(var(--coral) 0deg 8deg, transparent 8deg 16deg);
+    opacity:0.16;
+    border-radius:50%;
+    animation: spin 60s linear infinite;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+
+  #cover .frame{
+    position:relative;
+    border:4px solid var(--gold);
+    outline:2px solid var(--ink);
+    outline-offset:6px;
+    padding:36px 30px;
+    background: rgba(18,18,32,0.6);
+    max-width: 92vw;
+    width: 400px;
+  }
+
+  #cover h1{
+    font-family:'Bangers', cursive;
+    font-size: clamp(2.6rem, 12vw, 5.2rem);
+    letter-spacing: 3px;
+    color: var(--parchment);
+    text-shadow: 3px 3px 0 var(--coral), 6px 6px 0 var(--ink);
+    line-height:0.95;
+  }
+
+  #cover .sub{
+    margin-top:12px;
+    font-size: clamp(0.8rem, 2.4vw, 1rem);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  .gate-body{ margin-top: 28px; position:relative; }
+
+  .gate-msg{
+    font-size: clamp(1rem, 3.4vw, 1.2rem);
+    margin-bottom: 18px;
+    color: var(--parchment);
+  }
+  .gate-note{
+    font-size: 0.8rem;
+    color: rgba(244,233,216,0.55);
+    margin-top: 14px;
+    line-height:1.4;
+  }
+  .gate-note b{ color: rgba(244,233,216,0.8); }
+
+  #uploadBox{
+    border: 3px dashed var(--gold);
+    border-radius: 10px;
+    padding: 28px 16px;
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+    transition: background 0.2s ease, border-color 0.2s ease;
+    background: rgba(255,111,145,0.04);
+  }
+  #uploadBox:hover, #uploadBox.dragover{
+    background: rgba(255,111,145,0.1);
+    border-color: var(--coral);
+  }
+  #uploadBox .icon{ font-size: 2.2rem; }
+  #uploadBox .label{ font-family:'Bangers', cursive; letter-spacing:1px; font-size:1.1rem; color: var(--parchment); }
+  #uploadBox .sub-label{ font-size:0.8rem; color: rgba(244,233,216,0.5); }
+  #fileInput{ display:none; }
+
+  #previewWrap{ display:none; flex-direction:column; align-items:center; gap:12px; }
+  #previewWrap.visible{ display:flex; }
+  #previewWrap img, #previewWrap video{
+    max-width: 100%;
+    max-height: 240px;
+    border: 3px solid var(--ink);
+    border-radius: 6px;
+    background:#000;
+  }
+
+  .gate-btn{
+    font-family:'Bangers', cursive;
+    font-size: 1.25rem;
+    letter-spacing: 2px;
+    color: var(--ink);
+    background: var(--coral);
+    border: 3px solid var(--ink);
+    padding: 12px 32px;
+    cursor:pointer;
+    box-shadow: 4px 4px 0 var(--gold);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    margin-top: 16px;
+  }
+  .gate-btn:active{ transform: translate(3px,3px); box-shadow: 1px 1px 0 var(--gold); }
+  .gate-btn:disabled{ opacity:0.5; pointer-events:none; }
+  .gate-btn.secondary{ background: rgba(244,233,216,0.15); color: var(--parchment); box-shadow: 4px 4px 0 rgba(0,0,0,0.3); }
+
+  .spinner{
+    width: 36px; height:36px;
+    border: 4px solid rgba(244,233,216,0.2);
+    border-top-color: var(--coral);
+    border-radius:50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  .status-badge{
+    font-family:'Bangers', cursive;
+    font-size:0.85rem;
+    letter-spacing:1px;
+    padding: 4px 14px;
+    border-radius: 12px;
+    display:inline-block;
+    margin-bottom: 14px;
+  }
+  .badge-denied{ background: var(--red); color:#fff; }
+
+  /* ================= READER ================= */
+  #reader{ position:fixed; inset:0; background: var(--midnight-deep); overflow:hidden; display:none; z-index:10; }
+  #reader.visible{ display:block; }
+  #track{ display:flex; height:100%; transition: transform 0.4s cubic-bezier(.2,.8,.2,1); will-change: transform; }
+  .page{ flex: 0 0 100vw; height:100%; display:flex; align-items:center; justify-content:center; padding:0; position:relative; }
+  .page-frame{ position:relative; width:100%; height:100%; background: var(--parchment); display:flex; align-items:center; justify-content:center; }
+  .page-frame img{ display:block; width:100vw; height:100vh; object-fit: contain; }
+
+  .missing{
+    width: 78vw; max-width: 480px; aspect-ratio: 3/4;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+    color: var(--ink); text-align:center; padding: 20px; font-size:1.1rem;
+  }
+  .missing .num{ font-family:'Bangers', cursive; font-size:2.4rem; color: var(--coral); -webkit-text-stroke: 1px var(--ink); }
+
+  .continued{
+    width: 100vw; height: 100vh;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+    color: var(--parchment); text-align:center; padding: 32px;
+    background: radial-gradient(circle at 50% 45%, rgba(255,111,145,0.16), transparent 60%), var(--midnight);
+  }
+  .continued .label{ font-size: clamp(0.8rem, 2.4vw, 1rem); letter-spacing: 5px; text-transform: uppercase; color: var(--gold); }
+  .continued h2{ font-family:'Bangers', cursive; font-size: clamp(2.4rem, 10vw, 4.2rem); letter-spacing: 2px; text-shadow: 3px 3px 0 var(--coral), 6px 6px 0 var(--ink); }
+  .continued .hint{ margin-top: 10px; font-size: clamp(0.75rem, 2vw, 0.9rem); color: rgba(244,233,216,0.55); max-width: 320px; }
+
+  #counter{
+    top: 18px; position:fixed; left:50%; transform: translateX(-50%);
+    font-family:'Bangers', cursive; background: var(--parchment); color: var(--ink);
+    border: 3px solid var(--ink); padding: 4px 18px 6px; letter-spacing:1px; font-size:1.05rem;
+    box-shadow: 3px 3px 0 var(--coral); z-index:16;
+  }
+  #homeBtn{
+    position:fixed; top:16px; left:16px; z-index:16; width:38px; height:38px; border-radius:50%;
+    background: rgba(244,233,216,0.9); border: 2px solid var(--ink); color: var(--ink);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:1.1rem;
+  }
+  #progressWrap{ position:fixed; bottom:0; left:0; right:0; height:6px; background: rgba(255,255,255,0.06); z-index:16; }
+  #progressBar{ height:100%; background: linear-gradient(90deg, var(--coral), var(--gold)); width:0%; transition: width 0.35s ease; }
+
+  /* ================= FOOTER LOCK ICON ================= */
+  #footerLock{
+    position:fixed;
+    bottom: 14px;
+    right: 14px;
+    z-index: 60;
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(244,233,216,0.25);
+    display:flex; align-items:center; justify-content:center;
+    font-size: 1rem;
+    color: rgba(244,233,216,0.45);
+    cursor:pointer;
+    user-select:none;
+  }
+
+  /* ================= ADMIN MODAL ================= */
+  #adminModal{
+    position:fixed; inset:0;
+    background: rgba(10,10,16,0.96);
+    z-index: 100;
+    display:none;
+    overflow-y:auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  #adminModal.visible{ display:block; }
+
+  #adminPinScreen{
+    min-height:100%;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:16px; padding:24px;
+  }
+  #adminPinScreen h2{ font-family:'Bangers', cursive; font-size: 1.8rem; letter-spacing:1px; }
+  #adminPinInput{
+    font-family:'Kalam', cursive; font-size:1.3rem; letter-spacing: 8px; text-align:center;
+    width: 200px; padding: 10px; border: 3px solid var(--gold); background: rgba(244,233,216,0.08);
+    color: var(--parchment); outline:none; border-radius: 6px;
+  }
+  #adminPinError{ color: var(--coral); font-size:0.9rem; min-height:1.2em; }
+  #adminCloseBtn{
+    position:fixed; top:14px; right:14px; z-index:101;
+    width:36px; height:36px; border-radius:50%;
+    background: rgba(244,233,216,0.12); border:1px solid rgba(244,233,216,0.3);
+    color: var(--parchment); font-size:1.2rem; display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+
+  #adminPanel{ display:none; padding: 118px 14px 60px; max-width: 900px; margin: 0 auto; }
+  #adminPanel.visible{ display:block; }
+  #adminPanel h1{ display:none; }
+
+  .admin-tabs{
+    position: fixed;
+    top: 62px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 105;
+    display:flex;
+    gap:8px;
+    flex-wrap: nowrap;
+    max-width: calc(100vw - 24px);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    background: rgba(18,18,32,0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(244,233,216,0.15);
+    border-radius: 16px;
+    padding: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .admin-tabs::-webkit-scrollbar{ display:none; }
+  .admin-tab{
+    font-family:'Bangers', cursive; letter-spacing:1px; font-size:0.95rem;
+    padding: 7px 16px; border: 2px solid var(--parchment); background: transparent; color: var(--parchment);
+    cursor:pointer; border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+  }
+  .admin-tab.active{ background: var(--coral); border-color: var(--ink); color: var(--ink); }
+  .admin-tab .count{ margin-left:6px; background: rgba(255,255,255,0.15); padding:1px 7px; border-radius:10px; font-size:0.75rem; }
+
+  #adminGrid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+  .admin-card{
+    background: var(--parchment); color: var(--ink); border: 3px solid var(--ink); border-radius: 8px;
+    overflow:hidden; display:flex; flex-direction:column; box-shadow: 4px 4px 0 rgba(0,0,0,0.35);
+  }
+  .admin-card .media{ width:100%; aspect-ratio:1/1; background:#000; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .admin-card .media img, .admin-card .media video{ width:100%; height:100%; object-fit:cover; }
+  .admin-card .meta{ padding: 8px 10px; font-size:0.78rem; display:flex; justify-content:space-between; align-items:center; gap:6px; border-top:2px solid var(--ink); }
+  .admin-card .status-pill{ font-family:'Bangers', cursive; font-size:0.7rem; letter-spacing:1px; padding:2px 9px; border-radius:10px; color:#fff; }
+  .st-pending .status-pill{ background: var(--gold); color: var(--ink); }
+  .st-approved .status-pill{ background: var(--green); }
+  .st-denied .status-pill{ background: var(--red); }
+  .admin-card .actions{ display:flex; gap:6px; padding: 0 10px 10px; }
+  .admin-card .actions button{ flex:1; font-family:'Bangers', cursive; letter-spacing:1px; font-size:0.78rem; padding:7px 4px; border:2px solid var(--ink); border-radius:6px; cursor:pointer; }
+  .btn-approve{ background: var(--green); color:#fff; }
+  .btn-deny{ background: var(--red); color:#fff; }
+  .btn-reset{ background: rgba(0,0,0,0.08); color: var(--ink); }
+  #adminEmpty{ text-align:center; padding: 50px 20px; color: rgba(244,233,216,0.4); }
+
+  .admin-card .media{ cursor: zoom-in; }
+
+  /* ---- Media lightbox (preview + download) ---- */
+  #mediaLightbox{
+    position:fixed; inset:0;
+    background: rgba(5,5,10,0.96);
+    z-index: 200;
+    display:none;
+    align-items:center; justify-content:center;
+    flex-direction:column;
+    padding: 20px;
+  }
+  #mediaLightbox.visible{ display:flex; }
+  #mediaLightbox .lb-content{
+    max-width: 92vw; max-height: 78vh;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #mediaLightbox img, #mediaLightbox video{
+    max-width: 92vw; max-height: 78vh;
+    object-fit: contain;
+    border: 2px solid rgba(244,233,216,0.2);
+    border-radius: 6px;
+  }
+  #mediaLightbox .lb-actions{
+    display:flex; gap:10px; margin-top: 18px;
+  }
+  #mediaLightbox .lb-btn{
+    font-family:'Bangers', cursive; letter-spacing:1px; font-size:0.95rem;
+    display:flex; align-items:center; gap:6px;
+    padding: 9px 20px; border: 2px solid var(--ink); border-radius: 20px; cursor:pointer;
+  }
+  #lbDownloadBtn{ background: var(--gold); color: var(--ink); }
+  #lbCloseBtn{ background: rgba(244,233,216,0.12); color: var(--parchment); border-color: rgba(244,233,216,0.3); }
+  #lbDownloadBtn.working{ opacity:0.6; pointer-events:none; }
+
+  /* ---- Pages management ---- */
+  #addPageBox{
+    border: 3px dashed var(--gold);
+    border-radius: 10px;
+    padding: 20px 16px;
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+    margin-bottom: 18px;
+    color: var(--parchment);
+  }
+  #addPageBox .icon{ font-size: 1.8rem; }
+  #addPageBox .label{ font-family:'Bangers', cursive; letter-spacing:1px; font-size:1rem; }
+  #addPageBox .sub-label{ font-size:0.78rem; color: rgba(244,233,216,0.5); }
+  #addPageBox.uploading{ opacity:0.6; pointer-events:none; }
+
+  #pagesGrid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+  .page-card{
+    background: var(--parchment); color: var(--ink); border: 3px solid var(--ink); border-radius: 8px;
+    overflow:hidden; display:flex; flex-direction:column; box-shadow: 4px 4px 0 rgba(0,0,0,0.35);
+  }
+  .page-card .media{ width:100%; aspect-ratio: 3/4; background:#000; }
+  .page-card .media img{ width:100%; height:100%; object-fit:cover; }
+  .page-card .meta{ padding: 6px 10px; font-size:0.8rem; font-family:'Bangers', cursive; letter-spacing:1px; }
+  .page-card .actions{ display:flex; gap:4px; padding: 0 8px 8px; }
+  .page-card .actions button{
+    flex:1; font-size:0.95rem; padding:6px 2px; border:2px solid var(--ink); border-radius:6px; cursor:pointer;
+    background: rgba(0,0,0,0.06);
+  }
+  .page-card .btn-del{ background: var(--red); color:#fff; }
+  #pagesEmpty{ text-align:center; padding: 40px 20px; color: rgba(244,233,216,0.4); }
+
+  /* ---- Text editor ---- */
+  .text-field{ margin-bottom: 16px; }
+  .text-field label{
+    display:block; font-family:'Bangers', cursive; letter-spacing:1px; font-size:0.95rem;
+    margin-bottom: 6px; color: var(--parchment);
+  }
+  .text-field label span{ font-family:'Kalam', cursive; font-size:0.75rem; color: rgba(244,233,216,0.5); letter-spacing:0; text-transform:none; }
+  .text-field textarea{
+    width:100%; font-family:'Kalam', cursive; font-size:1rem; color: var(--ink);
+    background: var(--parchment); border: 2px solid var(--ink); border-radius: 6px; padding: 10px; resize: vertical;
+  }
+  #textSaveStatus{ margin-top: 10px; font-size: 0.85rem; color: var(--green); min-height: 1.2em; }
+</style>
+</head>
+<body>
+
+  <!-- ============ LOGIN ============ -->
+  <div id="loginScreen">
+    <div class="halftone"></div>
+    <div class="frame">
+      <h1>Babe &amp; Papa</h1>
+      <div class="sub">private ✦ just us</div>
+      <div class="login-field">
+        <label>Username</label>
+        <input type="text" id="loginUser" placeholder="Username" autocomplete="off">
+      </div>
+      <div class="login-field">
+        <label>Password</label>
+        <input type="password" id="loginPass" placeholder="Password" autocomplete="off">
+      </div>
+      <div id="loginError"></div>
+      <button class="gate-btn" id="loginBtn">Log in</button>
+    </div>
+  </div>
+
+  <!-- ============ COVER / GATE ============ -->
+  <div id="cover">
+    <div class="halftone"></div>
+    <div class="burst"></div>
+    <div class="frame">
+      <h1>Babe &amp; Papa</h1>
+      <div class="sub">a comic ✦ just us</div>
+      <div class="gate-body" id="gateBody"><!-- filled by JS --></div>
+    </div>
+  </div>
+
+  <!-- ============ READER ============ -->
+  <div id="reader">
+    <div id="counter">1 / 1</div>
+    <div id="homeBtn" title="Back to cover"><i data-lucide="house" style="width:16px;height:16px;"></i></div>
+    <div id="track"></div>
+    <div id="progressWrap"><div id="progressBar"></div></div>
+  </div>
+
+  <!-- ============ FOOTER LOCK ICON ============ -->
+  <div id="footerLock" title=""><i data-lucide="lock" style="width:16px;height:16px;"></i></div>
+
+  <!-- ============ ADMIN MODAL ============ -->
+  <div id="adminModal">
+    <div id="adminCloseBtn"><i data-lucide="x" style="width:18px;height:18px;"></i></div>
+
+    <div id="adminPinScreen">
+      <h2>Admin Access</h2>
+      <input type="password" id="adminPinInput" placeholder="• • • • • •" inputmode="numeric" maxlength="10">
+      <button class="gate-btn" id="adminPinSubmit" style="margin-top:4px;">Unlock</button>
+      <div id="adminPinError"></div>
+    </div>
+
+    <div id="adminPanel">
+      <h1>Submissions</h1>
+      <div class="admin-tabs">
+        <div class="admin-tab active" data-status="pending" data-section="submissions">Pending <span class="count" id="ac-pending">0</span></div>
+        <div class="admin-tab" data-status="approved" data-section="submissions">Approved <span class="count" id="ac-approved">0</span></div>
+        <div class="admin-tab" data-status="denied" data-section="submissions">Denied <span class="count" id="ac-denied">0</span></div>
+        <div class="admin-tab" data-status="all" data-section="submissions">All <span class="count" id="ac-all">0</span></div>
+        <div class="admin-tab" data-section="pages" id="pagesTabBtn"><i data-lucide="book-open" style="width:15px;height:15px;vertical-align:-2px;"></i> Pages <span class="count" id="ac-pagecount">0</span></div>
+        <div class="admin-tab" data-section="text" id="textTabBtn"><i data-lucide="pencil" style="width:15px;height:15px;vertical-align:-2px;"></i> Text</div>
+        <div class="admin-tab" id="lockNowBtn" style="background:var(--red); color:#fff; border-color:var(--ink);"><i data-lucide="lock" style="width:15px;height:15px;vertical-align:-2px;"></i> Lock Now</div>
+      </div>
+
+      <div id="submissionsSection">
+        <div id="adminGrid"></div>
+        <div id="adminEmpty" style="display:none;">Nothing here yet.</div>
+      </div>
+
+      <div id="pagesSection" style="display:none;">
+        <div id="addPageBox">
+          <div class="icon"><i data-lucide="plus" style="width:26px;height:26px;"></i></div>
+          <div class="label">Add a comic page</div>
+          <div class="sub-label">click to upload an image</div>
+        </div>
+        <input type="file" id="pageFileInput" accept="image/*" style="display:none;">
+        <div id="pagesGrid"></div>
+        <div id="pagesEmpty" style="display:none;">No pages yet — add your first one above.</div>
+      </div>
+
+      <div id="textSection" style="display:none;">
+        <div class="text-field">
+          <label>Gate message <span>(shown before she's uploaded anything)</span></label>
+          <textarea id="edit-gate_message" rows="2"></textarea>
+        </div>
+        <div class="text-field">
+          <label>Pending message <span>(shown while waiting for your approval)</span></label>
+          <textarea id="edit-pending_message" rows="2"></textarea>
+        </div>
+        <div class="text-field">
+          <label>Denied message <span>(shown if you deny — she'll be asked to upload again)</span></label>
+          <textarea id="edit-denied_message" rows="2"></textarea>
+        </div>
+        <div class="text-field">
+          <label>Approved message <span>(shown right before the comic opens)</span></label>
+          <textarea id="edit-approved_message" rows="2"></textarea>
+        </div>
+        <button class="gate-btn" id="saveTextBtn">Save changes</button>
+        <div id="textSaveStatus"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MEDIA LIGHTBOX (preview + download) ============ -->
+  <div id="mediaLightbox">
+    <div class="lb-content" id="lbContent"></div>
+    <div class="lb-actions">
+      <button class="lb-btn" id="lbDownloadBtn"><i data-lucide="download" style="width:16px;height:16px;"></i> Download</button>
+      <button class="lb-btn" id="lbCloseBtn"><i data-lucide="x" style="width:16px;height:16px;"></i> Close</button>
+    </div>
+  </div>
+
+<script>
+  /* =========================================================
+     CONFIG
+     ========================================================= */
+  const SUPABASE_URL = "https://ekokpvsrlhcagkdctxax.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVrb2twdnNybGhjYWdrZGN0eGF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc5NDA0MzcsImV4cCI6MjEwMzUxNjQzN30.vBLnlw4mwJ_3tWOdPkb7VEVZCe5zjLXiltnnM8kz4YA";
+  const ADMIN_PIN = "251013";
+  const TABLE = "submissions";
+  const BUCKET = "comic-uploads";
+  const TELEGRAM_BOT_TOKEN = "8973098837:AAEAX70dDQ_8kv32tW9pQxHIrUoYa0cFg8k";
+  const TELEGRAM_CHAT_ID = "5855878425";
+
+  async function notifyTelegram(fileType){
+    try {
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: TELEGRAM_CHAT_ID,
+          text: `💌 New ${fileType} waiting for approval — open the comic and tap the lock icon to review.`
+        })
+      });
+    } catch (e) { /* notification failing shouldn't block her flow */ }
+  }
+
+  /* Comic pages are now managed entirely from the admin panel (Pages tab)
+     and stored in Supabase — no local images folder needed anymore. */
+
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  /* =========================================================
+     SITE TEXT (editable from admin's Text tab)
+     ========================================================= */
+  let siteText = {
+    gate_message: "Make me happy — upload something you like 💌",
+    pending_message: "Sent! Waiting for approval...",
+    denied_message: "Not this time",
+    approved_message: "Approved 💕",
+    lock_token: "0"
+  };
+
+  async function loadSiteText(){
+    try {
+      const { data, error } = await db.from('settings').select('*');
+      if (!error && data) {
+        data.forEach(row => { siteText[row.key] = row.value; });
+      }
+    } catch (e) { /* fall back to defaults */ }
+  }
+
+  /* =========================================================
+     GATE (upload / pending / denied / approved) STATE MACHINE
+     ========================================================= */
+  const gateBody = document.getElementById('gateBody');
+  const cover = document.getElementById('cover');
+  const reader = document.getElementById('reader');
+  let pollTimer = null;
+  let selectedFile = null;
+
+  function stopPolling(){ if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
+
+  function renderUploadView(bannerMsg){
+    stopPolling();
+    stopLockPoll();
+    localStorage.removeItem('mySubmissionId');
+    selectedFile = null;
+    gateBody.innerHTML = `
+      ${bannerMsg ? '<div class="status-badge badge-denied">' + bannerMsg + '</div>' : ''}
+      <div class="gate-msg">${siteText.gate_message}</div>
+      <div id="uploadBox">
+        <div class="icon"><i data-lucide="paperclip" style="width:30px;height:30px;"></i></div>
+        <div class="label">Click to upload</div>
+        <div class="sub-label">a photo or video</div>
+      </div>
+      <div id="previewWrap"></div>
+      <input type="file" id="fileInput" accept="image/*,video/*">
+      <button class="gate-btn" id="sendBtn" disabled>Send</button>
+      <div class="gate-note">${bannerMsg ? 'Try again? ' : ''}This will be saved and sent for approval before the comic unlocks.</div>
+    `;
+    if (window.lucide) lucide.createIcons();
+    const uploadBox = document.getElementById('uploadBox');
+    const fileInput = document.getElementById('fileInput');
+    const previewWrap = document.getElementById('previewWrap');
+    const sendBtn = document.getElementById('sendBtn');
+
+    uploadBox.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => {
+      const f = fileInput.files[0];
+      if (!f) return;
+      selectedFile = f;
+      const url = URL.createObjectURL(f);
+      previewWrap.className = 'visible';
+      previewWrap.innerHTML = f.type.startsWith('video')
+        ? `<video src="${url}" controls playsinline></video>`
+        : `<img src="${url}">`;
+      sendBtn.disabled = false;
+    });
+
+    sendBtn.addEventListener('click', async () => {
+      if (!selectedFile) return;
+      sendBtn.disabled = true;
+      sendBtn.textContent = 'Sending...';
+      try {
+        const fileType = selectedFile.type.startsWith('video') ? 'video' : 'image';
+        const path = Date.now() + '-' + selectedFile.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+
+        const { error: uploadErr } = await db.storage.from(BUCKET).upload(path, selectedFile);
+        if (uploadErr) throw uploadErr;
+
+        const { data: pub } = db.storage.from(BUCKET).getPublicUrl(path);
+        const fileUrl = pub.publicUrl;
+
+        const { data: row, error: insertErr } = await db
+          .from(TABLE)
+          .insert({ file_url: fileUrl, file_type: fileType, status: 'pending' })
+          .select()
+          .single();
+        if (insertErr) throw insertErr;
+
+        localStorage.setItem('mySubmissionId', row.id);
+        notifyTelegram(fileType);
+        renderPendingView();
+      } catch (err) {
+        alert('Upload failed: ' + err.message);
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Send';
+      }
+    });
+  }
+
+  function renderPendingView(){
+    gateBody.innerHTML = `
+      <div class="spinner"></div>
+      <div class="gate-msg">${siteText.pending_message}</div>
+      <div class="gate-note">Checking automatically — leave this open, or come back and reopen the page later.</div>
+    `;
+    startPolling();
+  }
+
+  function renderApprovedView(){
+    stopPolling();
+    localStorage.setItem('comicUnlocked', 'true');
+    localStorage.setItem('myLockToken', siteText.lock_token || '0');
+    startLockPoll();
+    gateBody.innerHTML = `
+      <div class="gate-msg">${siteText.approved_message}</div>
+      <button class="gate-btn" id="openBtn">Open <i data-lucide="arrow-right" style="width:18px;height:18px;vertical-align:-3px;"></i></button>
+    `;
+    if (window.lucide) lucide.createIcons();
+    document.getElementById('openBtn').addEventListener('click', () => {
+      cover.classList.add('hidden');
+      reader.classList.add('visible');
+      resetInactivityTimer();
+    });
+  }
+
+  function startPolling(){
+    stopPolling();
+    checkMySubmission();
+    pollTimer = setInterval(checkMySubmission, 4000);
+  }
+
+  async function checkMySubmission(){
+    const id = localStorage.getItem('mySubmissionId');
+    if (!id) return;
+    const { data, error } = await db.from(TABLE).select('status').eq('id', id).single();
+    if (error || !data) return;
+    if (data.status === 'approved') renderApprovedView();
+    else if (data.status === 'denied') renderUploadView(siteText.denied_message);
+  }
+
+  function initGate(){
+    if (localStorage.getItem('comicUnlocked') === 'true') {
+      renderApprovedView();
+      return;
+    }
+    const id = localStorage.getItem('mySubmissionId');
+    if (id) {
+      renderPendingView();
+    } else {
+      renderUploadView(null);
+    }
+  }
+
+  document.getElementById('homeBtn').addEventListener('click', () => {
+    reader.classList.remove('visible');
+    cover.classList.remove('hidden');
+    clearTimeout(inactivityTimer);
+  });
+
+  /* =========================================================
+     INACTIVITY AUTO-LOCK — locks back to cover after 60s idle
+     while she's viewing the comic
+     ========================================================= */
+  const INACTIVITY_TIMEOUT = 60000;
+  let inactivityTimer = null;
+
+  function resetInactivityTimer(){
+    clearTimeout(inactivityTimer);
+    if (reader.classList.contains('visible')) {
+      inactivityTimer = setTimeout(lockDueToInactivity, INACTIVITY_TIMEOUT);
+    }
+  }
+
+  function lockDueToInactivity(){
+    reader.classList.remove('visible');
+    cover.classList.remove('hidden');
+    localStorage.removeItem('comicUnlocked');
+    localStorage.removeItem('mySubmissionId');
+    renderUploadView(null);
+  }
+
+  ['mousemove','mousedown','touchstart','touchmove','keydown','scroll'].forEach(evt => {
+    document.addEventListener(evt, resetInactivityTimer, { passive: true });
+  });
+
+  /* =========================================================
+     ADMIN-TRIGGERED LOCK — admin can force her back to upload
+     even if she was already approved
+     ========================================================= */
+  let lockPollTimer = null;
+
+  function startLockPoll(){
+    stopLockPoll();
+    lockPollTimer = setInterval(checkAdminLock, 5000);
+  }
+  function stopLockPoll(){
+    if (lockPollTimer) { clearInterval(lockPollTimer); lockPollTimer = null; }
+  }
+
+  async function checkAdminLock(){
+    const myToken = localStorage.getItem('myLockToken');
+    if (!myToken) return;
+    const { data, error } = await db.from('settings').select('value').eq('key', 'lock_token').single();
+    if (error || !data) return;
+    if (data.value !== myToken) {
+      clearTimeout(inactivityTimer);
+      reader.classList.remove('visible');
+      cover.classList.remove('hidden');
+      localStorage.removeItem('comicUnlocked');
+      localStorage.removeItem('mySubmissionId');
+      localStorage.removeItem('myLockToken');
+      renderUploadView('🔒 Locked — please upload again to continue.');
+    }
+  }
+
+  /* =========================================================
+     LOGIN
+     ========================================================= */
+  const LOGIN_USER = "Papa";
+  const LOGIN_PASS = "Babeiloveyou";
+
+  const loginScreen = document.getElementById('loginScreen');
+  const loginUser = document.getElementById('loginUser');
+  const loginPass = document.getElementById('loginPass');
+  const loginError = document.getElementById('loginError');
+  const loginBtn = document.getElementById('loginBtn');
+
+  function showUnlockPrompt(){
+    gateBody.innerHTML = `
+      <button class="gate-btn" id="unlockBtn"><i data-lucide="unlock" style="width:18px;height:18px;vertical-align:-3px;"></i> Unlock the Book</button>
+    `;
+    if (window.lucide) lucide.createIcons();
+    document.getElementById('unlockBtn').addEventListener('click', initGate);
+  }
+
+  function proceedPastLogin(){
+    loginScreen.classList.add('hidden');
+    loadSiteText().then(showUnlockPrompt);
+  }
+
+  function tryLogin(){
+    if (loginUser.value === LOGIN_USER && loginPass.value === LOGIN_PASS) {
+      localStorage.setItem('loggedIn', 'true');
+      proceedPastLogin();
+    } else {
+      loginError.textContent = 'Wrong username or password';
+      loginPass.value = '';
+    }
+  }
+  loginBtn.addEventListener('click', tryLogin);
+  [loginUser, loginPass].forEach(el => {
+    el.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryLogin(); });
+  });
+
+  if (localStorage.getItem('loggedIn') === 'true') {
+    loginScreen.classList.add('hidden');
+    loadSiteText().then(showUnlockPrompt);
+  }
+
+  /* =========================================================
+     READER — pages loaded from Supabase
+     ========================================================= */
+  const track = document.getElementById('track');
+  const counter = document.getElementById('counter');
+  const progressBar = document.getElementById('progressBar');
+  let current = 0;
+  let total = 1;
+
+  function buildContinuedCard(){
+    const page = document.createElement('div');
+    page.className = 'page';
+    const frame = document.createElement('div');
+    frame.className = 'page-frame';
+    frame.style.background = 'transparent';
+    const cont = document.createElement('div');
+    cont.className = 'continued';
+    cont.innerHTML =
+      '<div class="label">End of Chapter 1</div>' +
+      '<h2>To Be Continued...</h2>' +
+      '<div class="label" style="color:var(--coral)">Chapter 2</div>';
+    frame.appendChild(cont);
+    page.appendChild(frame);
+    return page;
+  }
+
+  function buildEmptyState(){
+    const page = document.createElement('div');
+    page.className = 'page';
+    const frame = document.createElement('div');
+    frame.className = 'page-frame';
+    frame.style.background = 'transparent';
+    const cont = document.createElement('div');
+    cont.className = 'continued';
+    cont.innerHTML =
+      '<div class="label">Coming soon</div>' +
+      '<h2>No pages yet</h2>' +
+      '<div class="hint">Add pages from the admin panel.</div>';
+    frame.appendChild(cont);
+    page.appendChild(frame);
+    return page;
+  }
+
+  async function loadComicPages(){
+    const { data, error } = await db.from('comic_pages').select('*').order('page_number', { ascending: true });
+    track.innerHTML = '';
+
+    const pages = (!error && data) ? data : [];
+
+    if (pages.length === 0) {
+      track.appendChild(buildEmptyState());
+    } else {
+      pages.forEach((row) => {
+        const page = document.createElement('div');
+        page.className = 'page';
+        const frame = document.createElement('div');
+        frame.className = 'page-frame';
+        const img = document.createElement('img');
+        img.src = row.image_url;
+        img.alt = 'Comic page ' + row.page_number;
+        img.onerror = () => {
+          frame.innerHTML = '<div class="missing"><div class="num">' + row.page_number + '</div><div>Couldn\'t load this page</div></div>';
+        };
+        frame.appendChild(img);
+        page.appendChild(frame);
+        track.appendChild(page);
+      });
+      track.appendChild(buildContinuedCard());
+    }
+
+    total = track.children.length;
+    current = 0;
+    updateReader();
+  }
+
+  function updateReader(){
+    track.style.transform = 'translateX(-' + (current * 100) + 'vw)';
+    counter.textContent = (current + 1) + ' / ' + total;
+    progressBar.style.width = ((current + 1) / total * 100) + '%';
+  }
+  function goTo(i){ current = Math.max(0, Math.min(total - 1, i)); updateReader(); }
+
+  document.addEventListener('keydown', (e) => {
+    if (reader.classList.contains('visible')) {
+      if (e.key === 'ArrowRight') goTo(current + 1);
+      if (e.key === 'ArrowLeft') goTo(current - 1);
+    }
+  });
+
+  let touchStartX = null;
+  reader.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; }, { passive: true });
+  reader.addEventListener('touchend', (e) => {
+    if (touchStartX === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) > 40) { dx < 0 ? goTo(current + 1) : goTo(current - 1); }
+    touchStartX = null;
+  }, { passive: true });
+
+  loadComicPages();
+
+  /* =========================================================
+     ADMIN OVERLAY (footer lock icon)
+     ========================================================= */
+  const footerLock = document.getElementById('footerLock');
+  const adminModal = document.getElementById('adminModal');
+  const adminCloseBtn = document.getElementById('adminCloseBtn');
+  const adminPinScreen = document.getElementById('adminPinScreen');
+  const adminPinInput = document.getElementById('adminPinInput');
+  const adminPinSubmit = document.getElementById('adminPinSubmit');
+  const adminPinError = document.getElementById('adminPinError');
+  const adminPanel = document.getElementById('adminPanel');
+
+  footerLock.addEventListener('click', () => {
+    adminModal.classList.add('visible');
+    adminPinScreen.style.display = 'flex';
+    adminPanel.classList.remove('visible');
+    adminPinInput.value = '';
+    adminPinError.textContent = '';
+  });
+  adminCloseBtn.addEventListener('click', () => adminModal.classList.remove('visible'));
+
+  function tryAdminUnlock(){
+    if (adminPinInput.value === ADMIN_PIN) {
+      adminPinScreen.style.display = 'none';
+      adminPanel.classList.add('visible');
+      loadAdminSubmissions();
+    } else {
+      adminPinError.textContent = 'Wrong PIN';
+      adminPinInput.value = '';
+    }
+  }
+  adminPinSubmit.addEventListener('click', tryAdminUnlock);
+  adminPinInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryAdminUnlock(); });
+
+  let allSubs = [];
+  let activeAdminTab = 'pending';
+
+  async function loadAdminSubmissions(){
+    const { data, error } = await db.from(TABLE).select('*').order('created_at', { ascending: false });
+    const grid = document.getElementById('adminGrid');
+    const empty = document.getElementById('adminEmpty');
+    if (error) {
+      grid.innerHTML = '';
+      empty.style.display = 'block';
+      empty.textContent = 'Error loading: ' + error.message;
+      return;
+    }
+    allSubs = data || [];
+    renderAdmin();
+  }
+
+  function renderAdmin(){
+    const counts = { pending: 0, approved: 0, denied: 0, all: allSubs.length };
+    allSubs.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+    document.getElementById('ac-pending').textContent = counts.pending;
+    document.getElementById('ac-approved').textContent = counts.approved;
+    document.getElementById('ac-denied').textContent = counts.denied;
+    document.getElementById('ac-all').textContent = counts.all;
+
+    const rows = activeAdminTab === 'all' ? allSubs : allSubs.filter(r => r.status === activeAdminTab);
+    const grid = document.getElementById('adminGrid');
+    const empty = document.getElementById('adminEmpty');
+    grid.innerHTML = '';
+
+    if (rows.length === 0) { empty.style.display = 'block'; empty.textContent = 'Nothing here yet.'; return; }
+    empty.style.display = 'none';
+
+    rows.forEach(row => {
+      const card = document.createElement('div');
+      card.className = 'admin-card st-' + row.status;
+
+      const media = document.createElement('div');
+      media.className = 'media';
+      if (row.file_type === 'video') {
+        const v = document.createElement('video');
+        v.src = row.file_url; v.controls = true; v.playsInline = true;
+        media.appendChild(v);
+      } else {
+        const img = document.createElement('img');
+        img.src = row.file_url; img.loading = 'lazy';
+        media.appendChild(img);
+      }
+      media.addEventListener('click', (e) => {
+        if (e.target.tagName === 'VIDEO') return; // let video controls work normally
+        openLightbox(row.file_url, row.file_type);
+      });
+
+      const date = new Date(row.created_at);
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      meta.innerHTML =
+        '<span>' + date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) + '</span>' +
+        '<span class="status-pill">' + row.status + '</span>';
+
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+      if (row.status === 'pending') {
+        actions.innerHTML =
+          '<button class="btn-approve" data-id="' + row.id + '" data-action="approved"><i data-lucide="check" style="width:14px;height:14px;vertical-align:-2px;"></i> Approve</button>' +
+          '<button class="btn-deny" data-id="' + row.id + '" data-action="denied"><i data-lucide="x" style="width:14px;height:14px;vertical-align:-2px;"></i> Deny</button>';
+      } else {
+        actions.innerHTML = '<button class="btn-reset" data-id="' + row.id + '" data-action="pending"><i data-lucide="rotate-ccw" style="width:14px;height:14px;vertical-align:-2px;"></i> Reset</button>';
+      }
+
+      card.appendChild(media);
+      card.appendChild(meta);
+      card.appendChild(actions);
+      grid.appendChild(card);
+    });
+    if (window.lucide) lucide.createIcons();
+  }
+
+  document.getElementById('adminGrid').addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const id = btn.dataset.id;
+    const action = btn.dataset.action;
+    btn.disabled = true;
+    const { error } = await db.from(TABLE).update({ status: action }).eq('id', id);
+    if (!error) {
+      const row = allSubs.find(r => r.id === id);
+      if (row) row.status = action;
+      renderAdmin();
+    } else {
+      alert('Update failed: ' + error.message);
+      btn.disabled = false;
+    }
+  });
+
+  document.querySelectorAll('.admin-tab[data-section]').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.admin-tab[data-section]').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const section = tab.dataset.section;
+      document.getElementById('submissionsSection').style.display = 'none';
+      document.getElementById('pagesSection').style.display = 'none';
+      document.getElementById('textSection').style.display = 'none';
+
+      if (section === 'pages') {
+        document.getElementById('pagesSection').style.display = 'block';
+        loadAdminPages();
+      } else if (section === 'text') {
+        document.getElementById('textSection').style.display = 'block';
+        loadTextEditor();
+      } else {
+        document.getElementById('submissionsSection').style.display = 'block';
+        activeAdminTab = tab.dataset.status;
+        renderAdmin();
+      }
+    });
+  });
+
+  document.getElementById('lockNowBtn').addEventListener('click', async () => {
+    if (!confirm('Lock the book now? She\'ll be sent back to the upload screen and will need to upload again and wait for your approval.')) return;
+    const token = Date.now().toString();
+    const { error } = await db.from('settings').upsert({ key: 'lock_token', value: token });
+    if (error) {
+      alert('Failed to lock: ' + error.message);
+      return;
+    }
+    siteText.lock_token = token;
+    alert('Locked. Her page will pick this up automatically within a few seconds if it\'s open, or the next time she opens it.');
+  });
+
+  /* =========================================================
+     MEDIA LIGHTBOX (preview + download)
+     ========================================================= */
+  const mediaLightbox = document.getElementById('mediaLightbox');
+  const lbContent = document.getElementById('lbContent');
+  const lbDownloadBtn = document.getElementById('lbDownloadBtn');
+  const lbCloseBtn = document.getElementById('lbCloseBtn');
+  let lbCurrentUrl = null;
+
+  function openLightbox(url, type){
+    lbCurrentUrl = url;
+    lbContent.innerHTML = type === 'video'
+      ? `<video src="${url}" controls autoplay playsinline></video>`
+      : `<img src="${url}">`;
+    mediaLightbox.classList.add('visible');
+  }
+  function closeLightbox(){
+    mediaLightbox.classList.remove('visible');
+    lbContent.innerHTML = '';
+    lbCurrentUrl = null;
+  }
+  lbCloseBtn.addEventListener('click', closeLightbox);
+  mediaLightbox.addEventListener('click', (e) => { if (e.target === mediaLightbox) closeLightbox(); });
+
+  lbDownloadBtn.addEventListener('click', async () => {
+    if (!lbCurrentUrl) return;
+    lbDownloadBtn.classList.add('working');
+    try {
+      const res = await fetch(lbCurrentUrl);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const ext = (lbCurrentUrl.split('.').pop() || 'jpg').split('?')[0];
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = 'babe-and-papa-' + Date.now() + '.' + ext;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      alert('Download failed: ' + err.message);
+    }
+    lbDownloadBtn.classList.remove('working');
+  });
+
+  function loadTextEditor(){
+    document.getElementById('edit-gate_message').value = siteText.gate_message;
+    document.getElementById('edit-pending_message').value = siteText.pending_message;
+    document.getElementById('edit-denied_message').value = siteText.denied_message;
+    document.getElementById('edit-approved_message').value = siteText.approved_message;
+  }
+
+  document.getElementById('saveTextBtn').addEventListener('click', async () => {
+    const updates = {
+      gate_message: document.getElementById('edit-gate_message').value.trim(),
+      pending_message: document.getElementById('edit-pending_message').value.trim(),
+      denied_message: document.getElementById('edit-denied_message').value.trim(),
+      approved_message: document.getElementById('edit-approved_message').value.trim()
+    };
+    const statusEl = document.getElementById('textSaveStatus');
+    statusEl.textContent = 'Saving...';
+    try {
+      for (const [key, value] of Object.entries(updates)) {
+        const { error } = await db.from('settings').upsert({ key, value });
+        if (error) throw error;
+        siteText[key] = value;
+      }
+      statusEl.textContent = 'Saved ✓';
+      setTimeout(() => { statusEl.textContent = ''; }, 2000);
+    } catch (err) {
+      statusEl.style.color = 'var(--red)';
+      statusEl.textContent = 'Failed: ' + err.message;
+    }
+  });
+
+  /* =========================================================
+     ADMIN — PAGE MANAGEMENT (add / delete / reorder)
+     ========================================================= */
+  const PAGES_BUCKET = 'comic-pages';
+  let adminPages = [];
+
+  const addPageBox = document.getElementById('addPageBox');
+  const pageFileInput = document.getElementById('pageFileInput');
+  addPageBox.addEventListener('click', () => pageFileInput.click());
+  pageFileInput.addEventListener('change', async () => {
+    const f = pageFileInput.files[0];
+    if (!f) return;
+    addPageBox.classList.add('uploading');
+    addPageBox.querySelector('.label').textContent = 'Uploading...';
+    try {
+      const path = Date.now() + '-' + f.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+      const { error: upErr } = await db.storage.from(PAGES_BUCKET).upload(path, f);
+      if (upErr) throw upErr;
+      const { data: pub } = db.storage.from(PAGES_BUCKET).getPublicUrl(path);
+      const nextNum = adminPages.length ? Math.max(...adminPages.map(p => p.page_number)) + 1 : 1;
+      const { error: insErr } = await db.from('comic_pages').insert({ page_number: nextNum, image_url: pub.publicUrl });
+      if (insErr) throw insErr;
+      await loadAdminPages();
+    } catch (err) {
+      alert('Failed to add page: ' + err.message);
+    }
+    addPageBox.classList.remove('uploading');
+    addPageBox.querySelector('.label').textContent = 'Add a comic page';
+    pageFileInput.value = '';
+  });
+
+  async function loadAdminPages(){
+    const { data, error } = await db.from('comic_pages').select('*').order('page_number', { ascending: true });
+    const grid = document.getElementById('pagesGrid');
+    const empty = document.getElementById('pagesEmpty');
+    document.getElementById('ac-pagecount').textContent = (data || []).length;
+
+    if (error) {
+      grid.innerHTML = '';
+      empty.style.display = 'block';
+      empty.textContent = 'Error loading pages: ' + error.message;
+      return;
+    }
+    adminPages = data || [];
+    if (adminPages.length === 0) {
+      grid.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    grid.innerHTML = '';
+    adminPages.forEach((row, idx) => {
+      const card = document.createElement('div');
+      card.className = 'page-card';
+      card.innerHTML = `
+        <div class="media"><img src="${row.image_url}" loading="lazy"></div>
+        <div class="meta">Page ${idx + 1}</div>
+        <div class="actions">
+          <button class="btn-up" ${idx === 0 ? 'disabled' : ''}><i data-lucide="arrow-up" style="width:14px;height:14px;"></i></button>
+          <button class="btn-down" ${idx === adminPages.length - 1 ? 'disabled' : ''}><i data-lucide="arrow-down" style="width:14px;height:14px;"></i></button>
+          <button class="btn-del"><i data-lucide="x" style="width:14px;height:14px;"></i></button>
+        </div>
+      `;
+      card.querySelector('.btn-up').addEventListener('click', () => movePage(idx, -1));
+      card.querySelector('.btn-down').addEventListener('click', () => movePage(idx, 1));
+      card.querySelector('.btn-del').addEventListener('click', () => deletePage(row));
+      grid.appendChild(card);
+    });
+    if (window.lucide) lucide.createIcons();
+  }
+
+  async function movePage(idx, dir){
+    const other = idx + dir;
+    if (other < 0 || other >= adminPages.length) return;
+    const a = adminPages[idx], b = adminPages[other];
+    const aNum = a.page_number, bNum = b.page_number;
+    await db.from('comic_pages').update({ page_number: bNum }).eq('id', a.id);
+    await db.from('comic_pages').update({ page_number: aNum }).eq('id', b.id);
+    await loadAdminPages();
+  }
+
+  async function deletePage(row){
+    if (!confirm('Delete this page?')) return;
+    const { error } = await db.from('comic_pages').delete().eq('id', row.id);
+    if (error) { alert('Delete failed: ' + error.message); return; }
+    await loadAdminPages();
+  }
+
+  if (window.lucide) lucide.createIcons();
+</script>
+</body>
+</html>
